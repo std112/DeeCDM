@@ -1,0 +1,2267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Direct Messages — HerrMeindel</title>
+<style>
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+    background: #313338;
+    color: #dbdee1;
+    font-family: "gg sans", "Segoe UI", -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif;
+    font-size: 15px;
+    line-height: 1.375;
+  }
+
+  a { color: #00a8fc; text-decoration: none; }
+  a:hover { text-decoration: underline; }
+
+  svg.icon {
+    width: 20px; height: 20px;
+    fill: none; stroke: #b5bac1; stroke-width: 2;
+    stroke-linecap: round; stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+
+  /* ---------- App layout ---------- */
+  .app {
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .titlebar {
+    height: 32px;
+    background: #1e1f22;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+    font-size: 14px;
+    font-weight: 600;
+    color: #dbdee1;
+    gap: 8px;
+  }
+  .titlebar .right {
+    position: absolute;
+    right: 14px;
+    display: flex;
+    gap: 16px;
+  }
+  .titlebar svg.icon { width: 18px; height: 18px; }
+
+  .main {
+    flex: 1;
+    display: flex;
+    min-height: 0;
+  }
+
+  .chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+  }
+
+  /* ---------- Channel header ---------- */
+  .header {
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 16px;
+    border-bottom: 1px solid #26282c;
+    box-shadow: 0 1px 0 rgba(0,0,0,.15);
+    background: #313338;
+  }
+  .header .who {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 16px;
+    color: #f2f3f5;
+  }
+  .header .who .avatar { width: 24px; height: 24px; }
+
+  .header .tools {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+  }
+  .header .tools svg.icon:hover { stroke: #dbdee1; cursor: pointer; }
+
+  .search {
+    display: flex;
+    align-items: center;
+    background: #1e1f22;
+    border-radius: 4px;
+    width: 240px;
+    height: 28px;
+    padding: 0 8px;
+  }
+  .search input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #dbdee1;
+    font-size: 14px;
+    font-family: inherit;
+  }
+  .search input::placeholder { color: #87898c; }
+  .search svg.icon { width: 16px; height: 16px; stroke: #87898c; }
+
+  /* ---------- Messages ---------- */
+  .messages {
+    flex: 1;
+    overflow-y: auto;
+    padding: 8px 0 16px;
+  }
+
+  .msg {
+    display: flex;
+    gap: 16px;
+    padding: 2px 16px;
+    margin-top: 17px;
+  }
+  .msg:hover { background: #2e3035; }
+  .msg.continued { margin-top: 0; }
+
+  .avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+    overflow: hidden;
+  }
+
+  .avatar.herr {
+    background:
+      conic-gradient(from 20deg, #e0b23c 0 25%, #b5443b 0 50%, #2f6fb5 0 70%, #7a5aa6 0 100%);
+  }
+  .avatar.wer {
+    background:
+      radial-gradient(circle at 65% 35%, #c94b4b 0 18%, transparent 19%),
+      linear-gradient(135deg, #3a5a40 0 45%, #eaeaea 45% 55%, #2b2d31 55%);
+  }
+  .avatar.clyde {
+    background: #4f7a6a center / cover no-repeat;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .avatar.clyde svg { width: 26px; height: 26px; }
+  .avatar.clyde.custom svg { display: none; }
+
+  .body { min-width: 0; }
+
+  .meta { display: flex; align-items: baseline; gap: 8px; }
+  .name { font-weight: 600; color: #f2f3f5; }
+  .name:hover { text-decoration: underline; cursor: pointer; }
+  .time { font-size: 12px; color: #949ba4; }
+
+  .line { color: #dbdee1; }
+  .line.failed { color: #f23f43; }
+
+  .system {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 2px 16px;
+    margin-top: 17px;
+    color: #949ba4;
+  }
+  .system .slot {
+    width: 40px;
+    display: flex;
+    justify-content: center;
+  }
+  .system svg.icon { stroke: #23a55a; width: 18px; height: 18px; }
+  .system b { color: #f2f3f5; font-weight: 600; }
+  .system .time { margin-left: 4px; }
+
+  /* Link embed */
+  .embed {
+    display: flex;
+    gap: 16px;
+    max-width: 432px;
+    margin: 4px 0 6px;
+    padding: 10px 16px 14px 12px;
+    background: #2b2d31;
+    border-left: 4px solid #1e1f22;
+    border-radius: 4px;
+  }
+  .embed .provider { font-size: 12px; color: #dbdee1; margin-bottom: 6px; }
+  .embed .title { display: block; font-weight: 600; font-size: 16px; margin-bottom: 8px; }
+  .embed .desc { font-size: 14px; color: #dbdee1; }
+  .embed .thumb {
+    width: 80px; height: 80px;
+    flex-shrink: 0;
+    border-radius: 4px;
+    background: linear-gradient(160deg, #4a2545, #9c4e68 60%, #d98a9c);
+  }
+
+  /* Clyde ephemeral message */
+  .ephemeral {
+    background: rgba(88,101,242,.08);
+    border-left: 2px solid #5865f2;
+    padding-top: 6px;
+    padding-bottom: 6px;
+  }
+  .ephemeral:hover { background: rgba(88,101,242,.12); }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    background: #5865f2;
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    border-radius: 3px;
+    padding: 0 4px;
+    height: 15px;
+    align-self: center;
+  }
+  .badge svg { width: 10px; height: 10px; stroke: #fff; stroke-width: 3; fill: none; }
+
+  .only-you {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 6px;
+    font-size: 12px;
+    color: #949ba4;
+  }
+  .only-you svg.icon { width: 14px; height: 14px; stroke: #949ba4; }
+
+  .gap { height: 20px; }
+
+
+  /* ---------- Conversation start ---------- */
+  .intro { padding: 16px 16px 8px; }
+  .intro .avatar { width: 80px; height: 80px; margin-bottom: 8px; }
+  .intro h1 { margin: 0; font-size: 32px; font-weight: 800; color: #f2f3f5; line-height: 1.25; }
+  .intro h2 { margin: 0 0 20px; font-size: 24px; font-weight: 500; color: #f2f3f5; }
+  .intro p { margin: 0 0 12px; font-size: 16px; color: #dbdee1; }
+  .intro p b { color: #f2f3f5; }
+  .intro-actions { display: flex; align-items: center; gap: 8px; font-size: 14px; }
+  .intro-actions .dot { width: 4px; height: 4px; border-radius: 50%; background: #4e5058; margin: 0 4px; }
+  .btn {
+    height: 32px; padding: 0 12px; border: none; border-radius: 4px;
+    font-family: inherit; font-size: 14px; font-weight: 500; color: #fff; cursor: pointer;
+  }
+  .btn.blue { background: #5865f2; }  .btn.blue:hover { background: #4752c4; }
+  .btn.grey { background: #4e5058; }  .btn.grey:hover { background: #6d6f78; }
+  .btn.red  { background: #da373c; }  .btn.red:hover  { background: #a12828; }
+
+  .divider {
+    display: flex; align-items: center; gap: 8px;
+    margin: 24px 16px 8px; font-size: 12px; font-weight: 600; color: #949ba4;
+  }
+  .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: #3f4147; }
+
+  .system.friend svg.icon { stroke: #23a55a; }
+
+  /* Sticker */
+  .sticker { width: 160px; height: 160px; margin-top: 4px; }
+
+  /* Image attachments (placeholders: swap in <img src="..."> with your own files) */
+  .attachment {
+    display: flex; align-items: center; justify-content: center;
+    margin: 4px 0; border-radius: 8px; overflow: hidden;
+    background: #2b2d31; border: 1px dashed #4e5058;
+    color: #949ba4; font-size: 13px; text-align: center;
+  }
+  .attachment img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .attachment.wide { width: 505px; height: 350px; max-width: 100%; }
+  .attachment.tall { width: 245px; height: 345px; }
+
+
+  /* ---------- Hidden image uploader (opens from the gift icon) ---------- */
+  .composer { position: relative; }
+  .gift-btn {
+    background: none; border: none; padding: 0; margin: 0;
+    display: flex; cursor: pointer;
+  }
+  .gift-btn:hover svg.icon, .gift-btn.active svg.icon { stroke: #dbdee1; }
+
+  .upload-panel {
+    position: absolute;
+    right: 16px;
+    bottom: 76px;
+    width: 340px;
+    background: #2b2d31;
+    border: 1px solid #1e1f22;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.45);
+    padding: 14px;
+    z-index: 20;
+  }
+  .upload-panel[hidden] { display: none; }
+  .up-title {
+    font-size: 12px; font-weight: 700; text-transform: uppercase;
+    color: #b5bac1; margin-bottom: 10px; letter-spacing: .02em;
+  }
+  .up-row { display: flex; gap: 12px; align-items: center; padding: 8px 0; }
+  .up-row + .up-row { border-top: 1px solid #3f4147; }
+  .up-preview {
+    width: 64px; height: 64px; flex-shrink: 0;
+    border-radius: 6px; background: #1e1f22 center / cover no-repeat;
+    border: 1px dashed #4e5058;
+  }
+  .up-label { font-size: 14px; font-weight: 600; color: #f2f3f5; margin-bottom: 6px; }
+  .up-label small { font-weight: 400; color: #949ba4; }
+  .up-buttons { display: flex; gap: 6px; }
+  .up-buttons .btn { height: 28px; font-size: 13px; display: inline-flex; align-items: center; }
+
+  .attachment.has-img { border: none; background: none; }
+  .attachment.has-img span { display: none; }
+  .attachment.tall.has-img { height: auto; }
+  .attachment.tall.has-img img { height: auto; }
+
+
+  /* ---------- Link preview customizer (opens from the GIF icon) ---------- */
+  .gif-btn { background: none; border: none; padding: 0; margin: 0; display: flex; cursor: pointer; }
+  .gif-btn:hover .gif, .gif-btn.active .gif { color: #dbdee1; border-color: #dbdee1; }
+  .link-panel { width: 380px; max-height: 70vh; overflow-y: auto; }
+  .field { display: block; margin-bottom: 10px; }
+  .field span {
+    display: block; font-size: 12px; font-weight: 700; color: #b5bac1;
+    text-transform: uppercase; letter-spacing: .02em; margin-bottom: 4px;
+  }
+  .field input, .field textarea {
+    width: 100%; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px;
+    color: #dbdee1; font-family: inherit; font-size: 14px; padding: 8px 10px; outline: none; resize: vertical;
+  }
+  .field input:focus, .field textarea:focus { border-color: #5865f2; }
+  .embed .desc { white-space: pre-line; overflow-wrap: anywhere; }
+  .embed .thumb { overflow: hidden; }
+  .embed .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+
+  /* ---------- People customizer (opens from the sticker icon) ---------- */
+  .person { display: flex; gap: 12px; padding: 8px 0; }
+  .person + .person { border-top: 1px solid #3f4147; padding-top: 14px; }
+  .person-prev { width: 56px; height: 56px; border-radius: 50%; border-style: solid; }
+  .person-fields { flex: 1; min-width: 0; }
+  .avatar.custom { background-size: cover !important; background-position: center !important; }
+
+
+  /* ---------- Message customizer (opens from the smile icon) ---------- */
+  .msg-panel { width: 400px; }
+  .msg-row { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 8px; }
+  .msg-row .who-tag {
+    width: 96px; flex-shrink: 0; padding-top: 8px;
+    font-size: 12px; font-weight: 700; color: #b5bac1;
+    overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .msg-row .who-tag small { display: block; font-weight: 400; color: #949ba4; }
+  .msg-row textarea {
+    flex: 1; min-width: 0; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px;
+    color: #dbdee1; font-family: inherit; font-size: 14px; padding: 7px 10px;
+    outline: none; resize: vertical; min-height: 34px;
+  }
+  .msg-row textarea:focus { border-color: #5865f2; }
+  .line[data-msg] { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+
+  /* ---------- App avatar customizer (opens from the + icon) ---------- */
+  .app-panel { left: 16px; right: auto; width: 320px; }
+
+  /* ---------- Composer ---------- */
+  .composer { padding: 0 16px 24px; }
+  .composer-box {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    background: #383a40;
+    border-radius: 8px;
+    height: 44px;
+    padding: 0 16px;
+  }
+  .composer-box input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #dbdee1;
+    font-size: 15px;
+    font-family: inherit;
+  }
+  .composer-box input::placeholder { color: #6d6f78; }
+  .composer-box svg.icon:hover { stroke: #dbdee1; cursor: pointer; }
+  .gif {
+    font-size: 10px;
+    font-weight: 800;
+    color: #b5bac1;
+    border: 2px solid #b5bac1;
+    border-radius: 4px;
+    padding: 0 3px;
+    line-height: 14px;
+  }
+
+  /* ---------- Profile panel ---------- */
+  .profile {
+    width: 340px;
+    flex-shrink: 0;
+    background: #232428;
+    margin: 8px;
+    border-radius: 8px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .banner {
+    height: 105px;
+    background: #6e5354;
+    position: relative;
+  }
+  .banner .actions {
+    position: absolute;
+    top: 12px; right: 12px;
+    display: flex;
+    gap: 8px;
+  }
+  .round-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0,0,0,.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  .round-btn svg.icon { width: 16px; height: 16px; stroke: #fff; }
+
+  .big-avatar {
+    position: absolute;
+    left: 12px;
+    bottom: -44px;
+    width: 92px; height: 92px;
+    border-radius: 50%;
+    border: 6px solid #232428;
+  }
+  .big-avatar .avatar { width: 100%; height: 100%; }
+  .status {
+    position: absolute;
+    right: -2px; bottom: 2px;
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: #232428;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .status::after {
+    content: "";
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    border: 4px solid #80848e;
+    box-sizing: border-box;
+  }
+
+  .profile-body {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 56px 16px 16px;
+  }
+
+  .warning {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    border: 1px solid #f0b232;
+    border-radius: 6px;
+    padding: 8px 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #f2f3f5;
+    margin-bottom: 16px;
+  }
+  .warning svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  .display-name { font-size: 20px; font-weight: 700; color: #f2f3f5; }
+  .username { font-size: 14px; color: #dbdee1; margin-bottom: 20px; }
+
+  .label { font-size: 12px; font-weight: 700; color: #dbdee1; margin-bottom: 4px; }
+  .value { font-size: 14px; color: #dbdee1; }
+
+  .spacer { flex: 1; }
+
+  .full-btn {
+    width: 100%;
+    height: 40px;
+    border: none;
+    border-radius: 8px;
+    background: #2e2f34;
+    color: #f2f3f5;
+    font-size: 15px;
+    font-weight: 600;
+    font-family: inherit;
+    cursor: pointer;
+  }
+  .full-btn:hover { background: #393a40; }
+
+
+  /* ---------- Closer match to the app layout ---------- */
+  html, body { background: #1a1a1e; }
+  .app { background: #1a1a1e; }
+  .header {
+    height: 50px;
+    background: #1a1a1e;
+    border-bottom: 1px solid #2a2b30;
+    box-shadow: none;
+    padding: 0 12px 0 16px;
+  }
+  .header .who { font-size: 16px; }
+  .header .who .avatar { width: 24px; height: 24px; }
+  .search {
+    width: 244px; height: 32px;
+    background: #141417;
+    border: 1px solid #2e2f35;
+    border-radius: 8px;
+  }
+  .main { background: #1a1a1e; }
+  .chat { background: #1a1a1e; }
+  .messages { padding-top: 0; }
+  .msg:hover { background: #202024; }
+
+  .intro { padding: 16px 16px 4px; }
+  .divider { margin: 20px 16px 6px; }
+  .divider::before, .divider::after { background: #2e2f35; }
+
+  .composer { padding: 0 8px 8px 8px; }
+  .composer-box {
+    height: 52px;
+    background: #222327;
+    border: 1px solid #2e2f35;
+    border-radius: 8px;
+  }
+
+  .profile {
+    width: 288px;
+    margin: 8px 8px 8px 8px;
+    background: #232428;
+    border: 1px solid #2e2f35;
+    border-radius: 8px;
+  }
+  .profile-body { padding-top: 48px; }
+  .banner { height: 108px; background: #5a4546; }
+  .big-avatar { left: 12px; bottom: -44px; width: 92px; height: 92px; border-color: #232428; }
+  .status { background: #232428; }
+  .warning { background: transparent; border-color: #c8952a; }
+  .full-btn { background: #2e2f34; border: 1px solid #3a3b41; }
+  .full-btn:hover { background: #393a40; }
+
+  .titlebar { background: #121214; border-bottom: 1px solid #1e1f22; height: 32px; }
+
+  /* ---------- Drag handle between chat and profile ---------- */
+  .resizer {
+    width: 8px;
+    flex-shrink: 0;
+    cursor: col-resize;
+    position: relative;
+    margin-right: -8px;
+    z-index: 5;
+  }
+  .resizer::after {
+    content: "";
+    position: absolute;
+    top: 8px; bottom: 8px; left: 3px;
+    width: 2px;
+    border-radius: 1px;
+    background: transparent;
+    transition: background .15s;
+  }
+  .resizer:hover::after, .resizer.dragging::after { background: #5865f2; }
+  body.resizing { cursor: col-resize; user-select: none; }
+  @media (max-width: 1000px) { .resizer { display: none; } }
+
+  /* ---------- Hidden reveal page (drag from right edge) ---------- */
+  .edge-grab {
+    position: fixed; top: 0; right: 0; bottom: 0;
+    width: 14px; z-index: 50; cursor: w-resize;
+  }
+  .edge-grab::after {
+    content: ""; position: absolute; top: 50%; right: 3px;
+    width: 4px; height: 56px; margin-top: -28px; border-radius: 2px;
+    background: #4e5058; opacity: 0; transition: opacity .2s;
+  }
+  .edge-grab:hover::after { opacity: 1; }
+
+  .reveal {
+    position: fixed; inset: 0; z-index: 60;
+    background: #050505;
+    transform: translateX(100%);
+    transition: transform .35s cubic-bezier(.2,.8,.2,1);
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden;
+    box-shadow: -20px 0 60px rgba(0,0,0,.6);
+  }
+  .reveal.dragging { transition: none; }
+  .reveal.open { transform: translateX(0); }
+  .reveal::before {
+    content: ""; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, rgba(255,255,255,.03) 0 1px, transparent 1px 3px);
+  }
+  .reveal-inner { padding: 24px; text-align: center; }
+  .reveal-text {
+    position: relative;
+    font-family: "Impact", "Arial Black", "Segoe UI", sans-serif;
+    font-size: clamp(36px, 8vw, 120px);
+    font-weight: 900; letter-spacing: .02em; line-height: 1.05;
+    color: #f2f3f5; text-transform: uppercase;
+  }
+  .reveal.open .reveal-text::before,
+  .reveal.open .reveal-text::after {
+    content: attr(data-text); position: absolute; inset: 0; overflow: hidden;
+  }
+  .reveal.open .reveal-text::before { color: #ff2d55; animation: glitch1 2.2s infinite steps(1); }
+  .reveal.open .reveal-text::after  { color: #00e5ff; animation: glitch2 1.8s infinite steps(1); }
+  @keyframes glitch1 {
+    0%,100% { transform: translate(0); clip-path: inset(0 0 100% 0); }
+    10% { transform: translate(-4px, 2px); clip-path: inset(10% 0 60% 0); }
+    30% { transform: translate(3px, -1px); clip-path: inset(50% 0 20% 0); }
+    60% { transform: translate(-2px, 1px); clip-path: inset(80% 0 5% 0); }
+  }
+  @keyframes glitch2 {
+    0%,100% { transform: translate(0); clip-path: inset(100% 0 0 0); }
+    15% { transform: translate(4px, -2px); clip-path: inset(30% 0 45% 0); }
+    45% { transform: translate(-3px, 2px); clip-path: inset(5% 0 75% 0); }
+    75% { transform: translate(2px, 0); clip-path: inset(65% 0 15% 0); }
+  }
+  .reveal-close {
+    position: absolute; top: 16px; right: 20px;
+    width: 44px; height: 44px; border: none; border-radius: 50%;
+    background: rgba(255,255,255,.08); color: #dbdee1;
+    font-size: 28px; line-height: 1; cursor: pointer; z-index: 2;
+  }
+  .reveal-close:hover { background: rgba(255,255,255,.16); }
+
+  /* ---------- Reveal lives inside the profile card ---------- */
+  .profile { position: relative; }
+  .edge-grab { position: absolute; top: 0; right: 0; bottom: 0; width: 14px; z-index: 30; }
+  .edge-grab::after { opacity: .55; }
+  .reveal { position: absolute; inset: 0; z-index: 40; border-radius: inherit; box-shadow: -12px 0 30px rgba(0,0,0,.5); }
+  .reveal-inner { padding: 20px; }
+  .reveal-text { font-size: clamp(28px, 2.6vw + 14px, 56px); overflow-wrap: anywhere; }
+  .reveal-close { top: 10px; right: 12px; width: 36px; height: 36px; font-size: 24px; }
+
+  /* ---------- Right-edge grip (window edge, next to the profile card) ---------- */
+  .edge-grab {
+    position: fixed; top: 0; right: 0; bottom: 0; left: auto;
+    width: 22px; z-index: 70; cursor: w-resize;
+  }
+  .edge-grab::after {
+    right: 5px; width: 4px; height: 72px; margin-top: -36px;
+    background: #6d6f78; opacity: .5;
+  }
+  .edge-grab:hover::after, body.resizing .edge-grab::after { opacity: 1; background: #b5bac1; }
+
+  /* dark scrollbars instead of the white browser default */
+  * { scrollbar-width: thin; scrollbar-color: #1a1b1e transparent; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: #1a1b1e; border-radius: 4px; }
+  .messages::-webkit-scrollbar-thumb { background: #121214; }
+  @media (max-width: 1000px) { .edge-grab { display: none; } }
+
+  /* ---------- Slide the whole profile card left to reveal the hidden page ---------- */
+  .main { position: relative; }
+  .profile { position: relative; z-index: 45; will-change: transform; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+  .profile.sliding { transition: none; }
+  .reveal {
+    position: absolute; top: 8px; right: 8px; bottom: 8px; left: auto; inset: 8px 8px 8px auto;
+    width: 288px; z-index: 40; border-radius: 8px; border: 1px solid #2e2f35;
+    transform: none; transition: none; visibility: hidden;
+    box-shadow: none;
+  }
+  .reveal.shown { visibility: visible; }
+
+  /* ---------- Full right-side reveal (title bar + header + profile slot) ---------- */
+  .reveal {
+    position: fixed; inset: 0 0 0 auto; top: 0; right: 0; bottom: 0; left: auto;
+    width: 304px; z-index: 44; border: none; border-radius: 0;
+    border-left: 1px solid #2e2f35;
+  }
+  .header .tools { position: relative; z-index: 46; }
+  .titlebar .right { z-index: 46; }
+  .header .tools, .titlebar .right { transition: transform .35s cubic-bezier(.2,.8,.2,1); will-change: transform; }
+  .header .tools.sliding, .titlebar .right.sliding { transition: none; }
+  .header .tools.moved { background: #1a1a1e; border-radius: 8px; }
+  .titlebar .right.moved { background: #121214; border-radius: 6px; padding: 2px 4px; }
+
+  /* ---------- These also slide with the profile card ---------- */
+  .title-center { display: inline-flex; align-items: center; gap: 8px; position: relative; z-index: 46; }
+  .composer-icons { display: flex; align-items: center; gap: 16px; position: relative; z-index: 46; }
+  .title-center, .composer-icons { transition: transform .35s cubic-bezier(.2,.8,.2,1); will-change: transform; }
+  .title-center.sliding, .composer-icons.sliding { transition: none; }
+  .title-center.moved { background: #121214; border-radius: 6px; padding: 2px 6px; }
+  .composer-icons.moved { background: #222327; border-radius: 6px; padding: 4px 6px; }
+
+  /* the icon panels follow their icons when things are slid over */
+  .upload-panel { z-index: 47; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+  .upload-panel.sliding { transition: none; }
+
+  /* ---------- Full profile pop-up ---------- */
+  .fp-backdrop {
+    position: fixed; inset: 0; z-index: 100;
+    background: rgba(0,0,0,.72);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px;
+    animation: fpFade .15s ease-out;
+  }
+  .fp-backdrop[hidden] { display: none; }
+  @keyframes fpFade { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes fpPop { from { transform: scale(.96); opacity: 0; } to { transform: none; opacity: 1; } }
+
+  .fp-modal {
+    position: relative;
+    width: min(900px, 100%); height: min(700px, 100%);
+    background: #1a1a1e; border-radius: 12px;
+    display: flex; gap: 32px; padding: 24px 48px 0 36px;
+    overflow: hidden;
+    animation: fpPop .18s ease-out;
+    box-shadow: 0 16px 48px rgba(0,0,0,.6);
+  }
+  .fp-close {
+    position: absolute; top: 12px; right: 12px;
+    width: 32px; height: 32px; border: none; border-radius: 8px;
+    background: #2b2d31; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fp-close:hover { background: #3a3c42; }
+  .fp-close svg { width: 18px; height: 18px; stroke: #dbdee1; stroke-width: 2.4; fill: none; stroke-linecap: round; }
+
+  .fp-left {
+    width: 400px; flex-shrink: 0;
+    background: #232428; border-radius: 16px 16px 0 0;
+    position: relative; overflow-y: auto;
+  }
+  .fp-banner { height: 140px; background: #5a4546; border-radius: 16px 16px 0 0; }
+  .fp-avatar-wrap {
+    position: absolute; left: 24px; top: 72px;
+    width: 136px; height: 136px; border-radius: 50%;
+    border: 8px solid #232428; background: #232428;
+  }
+  .fp-avatar { width: 100%; height: 100%; }
+  .fp-status {
+    position: absolute; right: 2px; bottom: 6px;
+    width: 32px; height: 32px; border-radius: 50%;
+    background: #232428; display: flex; align-items: center; justify-content: center;
+  }
+  .fp-status::after {
+    content: ""; width: 20px; height: 20px; border-radius: 50%;
+    border: 5px solid #80848e; box-sizing: border-box;
+  }
+
+  .fp-info { padding: 84px 32px 32px; }
+  .fp-name { font-size: 24px; font-weight: 700; color: #f2f3f5; line-height: 1.2; }
+  .fp-user { font-size: 15px; color: #dbdee1; margin: 6px 0 22px; }
+
+  .fp-actions { display: flex; gap: 8px; margin-bottom: 26px; }
+  .fp-add { display: inline-flex; align-items: center; gap: 6px; height: 32px; }
+  .fp-add svg { width: 16px; height: 16px; stroke: #fff; stroke-width: 2.2; fill: none; stroke-linecap: round; }
+  .fp-square {
+    width: 32px; height: 32px; border: none; border-radius: 8px;
+    background: #2e3035; cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fp-square:hover { background: #3a3c42; }
+  .fp-square svg { width: 18px; height: 18px; stroke: #dbdee1; stroke-width: 2.4; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+
+  .fp-label { font-size: 13px; font-weight: 500; color: #b5bac1; margin-bottom: 8px; }
+  .fp-since { display: flex; align-items: center; gap: 8px; font-size: 15px; color: #dbdee1; margin-bottom: 24px; }
+  .fp-since svg { width: 18px; height: 18px; stroke: #b5bac1; stroke-width: 2; fill: none; stroke-linecap: round; }
+
+  .fp-note {
+    width: 100%; background: transparent; border: none; outline: none; resize: none;
+    color: #dbdee1; font-family: inherit; font-size: 14px; padding: 4px 0;
+    border-radius: 4px;
+  }
+  .fp-note::placeholder { color: #949ba4; font-style: italic; }
+  .fp-note:focus { background: #1e1f22; padding: 6px 8px; }
+
+  .fp-right { flex: 1; min-width: 0; padding-top: 12px; overflow-y: auto; }
+  .fp-tabs { display: flex; gap: 24px; border-bottom: 1px solid #2e2f35; margin-bottom: 18px; }
+  .fp-tab {
+    background: none; border: none; padding: 0 0 12px; cursor: pointer;
+    font-family: inherit; font-size: 15px; font-weight: 600; color: #949ba4;
+    border-bottom: 2px solid transparent; margin-bottom: -1px;
+  }
+  .fp-tab:hover { color: #dbdee1; }
+  .fp-tab.active { color: #f2f3f5; border-bottom-color: #f2f3f5; }
+
+  .fp-small { font-size: 13px; font-weight: 500; color: #b5bac1; margin-bottom: 8px; }
+  .fp-card { background: #2b2d31; border-radius: 12px; padding: 12px; }
+  .fp-card-top {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 13px; font-weight: 600; color: #f2f3f5; margin-bottom: 10px;
+  }
+  .fp-card-top svg { width: 18px; height: 18px; stroke: #b5bac1; stroke-width: 2.6; fill: none; stroke-linecap: round; }
+  .fp-game { display: flex; gap: 12px; align-items: center; }
+  .fp-game-img {
+    width: 100px; height: 100px; border-radius: 8px; flex-shrink: 0;
+    background: #1e1f22 center / cover no-repeat;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .fp-game-img svg { width: 44px; height: 44px; stroke: #6d6f78; stroke-width: 1.6; fill: none; stroke-linecap: round; }
+  .fp-game-img.has-img svg { display: none; }
+  .fp-game-name { font-size: 15px; font-weight: 600; color: #f2f3f5; margin-bottom: 4px; }
+  .fp-game-time { display: flex; align-items: center; gap: 6px; font-size: 13px; color: #23a55a; font-family: Consolas, "Courier New", monospace; }
+  .fp-game-time svg { width: 16px; height: 16px; stroke: #23a55a; stroke-width: 2; fill: none; stroke-linecap: round; }
+
+  .fp-empty { color: #949ba4; font-size: 14px; padding: 40px 0; text-align: center; }
+
+  @media (max-width: 820px) {
+    .fp-modal { flex-direction: column; padding: 56px 16px 0; gap: 16px; overflow-y: auto; }
+    .fp-left { width: 100%; overflow: visible; }
+    .fp-right { overflow: visible; padding-bottom: 24px; }
+  }
+
+  /* ---------- Pop-up: Connections (mirrors the link preview) ---------- */
+  .fp-conn { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 24px; }
+  .fp-conn-icon {
+    width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px;
+    background: #f2f3f5 center / cover no-repeat;
+    display: flex; align-items: center; justify-content: center; overflow: hidden;
+  }
+  .fp-conn-icon svg { width: 18px; height: 18px; stroke: #1e1f22; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .fp-conn-icon.has-img svg { display: none; }
+  .fp-conn-body { min-width: 0; }
+  .fp-conn-name {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 15px; font-weight: 600; color: #f2f3f5; text-decoration: none;
+    overflow-wrap: anywhere;
+  }
+  .fp-conn-name:hover { text-decoration: underline; }
+  .fp-conn-name svg { width: 16px; height: 16px; flex-shrink: 0; stroke: #dbdee1; stroke-width: 2.2; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+  .fp-conn-site { font-size: 12px; color: #b5bac1; margin-top: 2px; }
+  .fp-conn-site:empty { display: none; }
+  .fp-conn-desc { font-size: 13px; color: #dbdee1; margin-top: 4px; white-space: pre-line; overflow-wrap: anywhere; }
+
+  .backup-note { font-size: 12px; color: #949ba4; margin-top: 8px; line-height: 1.35; }
+
+  /* ---------- Profile width handle: always on top and easy to see ---------- */
+  .resizer { width: 12px; margin-right: -10px; z-index: 48; transition: transform .35s cubic-bezier(.2,.8,.2,1); }
+  .resizer.sliding { transition: none; }
+  .resizer::after { left: 5px; background: #3a3b41; }
+  .resizer::before {
+    content: ""; position: absolute; top: 50%; left: 3px;
+    width: 6px; height: 40px; margin-top: -20px; border-radius: 3px;
+    background: #4e5058; opacity: .7; transition: opacity .15s, background .15s;
+  }
+  .resizer:hover::before, .resizer.dragging::before { background: #5865f2; opacity: 1; }
+
+  /* ---------- Image link / paste box ---------- */
+  .up-info { flex: 1; min-width: 0; }
+  .img-link {
+    width: 100%; margin-top: 8px; background: #1e1f22; border: 1px solid #1e1f22; border-radius: 4px;
+    color: #dbdee1; font-family: inherit; font-size: 13px; padding: 6px 8px; outline: none;
+  }
+  .img-link:focus { border-color: #5865f2; }
+  .img-link.bad { border-color: #da373c; }
+  .up-row.paste-target .up-preview { border-color: #5865f2; border-style: solid; }
+
+  /* ---------- Responsive ---------- */
+  @media (max-width: 1000px) {
+    .profile { display: none; }
+    .search { width: 160px; }
+  }
+  @media (max-width: 600px) {
+    .search, .header .tools .hide-sm { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- Window title bar -->
+  <div class="titlebar">
+    <span class="title-center" id="titleCenter"><svg class="icon" viewBox="0 0 24 24" style="stroke:#dbdee1;width:16px;height:16px"><path d="M21 15a2 2 0 0 1-2 2H8l-5 4V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    Direct Messages</span>
+    <div class="right" id="titleIcons">
+      <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 13h5l2 3h4l2-3h5"/></svg>
+      <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.6 9.2a2.5 2.5 0 0 1 4.9.8c0 1.7-2.5 2-2.5 3.5"/><path d="M12 17h.01"/></svg>
+    </div>
+  </div>
+
+      <header class="header">
+        <div class="who">
+          <div class="avatar herr"></div>
+          <span data-n="herr">HerrMeindel</span>
+        </div>
+        <div class="tools" id="headerTools">
+          <svg class="icon" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.4 2.1L8 10.2a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.4c1 .4 2 .6 3 .7a2 2 0 0 1 1.5 2z"/></svg>
+          <svg class="icon" viewBox="0 0 24 24"><path d="M16 10l5-3v10l-5-3"/><rect x="2" y="6" width="14" height="12" rx="2"/></svg>
+          <svg class="icon hide-sm" viewBox="0 0 24 24"><path d="M15 3l6 6-4 1-4 4 1 5-3-3-6 6 6-6-3-3 5 1 4-4z"/></svg>
+          <svg class="icon hide-sm" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M19 8v6M16 11h6"/></svg>
+          <svg class="icon hide-sm" viewBox="0 0 24 24" style="stroke:#f2f3f5"><circle cx="10" cy="8" r="4"/><path d="M3 21c0-4 3-6 7-6 1.5 0 2.8.3 3.9.9"/><circle cx="18" cy="18" r="4" style="fill:#f2f3f5"/></svg>
+          <label class="search">
+            <input type="text" id="searchInput" placeholder="Search herrmeindel">
+            <svg class="icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          </label>
+        </div>
+      </header>
+
+  <div class="main">
+
+
+    <!-- ===== Chat column ===== -->
+    <section class="chat">
+
+
+
+      <main class="messages" id="messages">
+
+        <!-- Beginning of the DM -->
+        <div class="intro">
+          <div class="avatar herr"></div>
+          <h1 data-n="herr">HerrMeindel</h1>
+          <h2 data-u="herr">herrmeindel</h2>
+          <p>This is the beginning of your direct message history with <b data-n="herr">HerrMeindel</b>.</p>
+          <div class="intro-actions">
+            <span>No servers in common</span><span class="dot"></span>
+            <button class="btn blue">Add Friend</button>
+            <button class="btn grey">Block</button>
+            <button class="btn red">Report Spam</button>
+          </div>
+        </div>
+
+
+        <div class="system friend">
+          <div class="slot"><svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M16 11l2 2 4-4"/></svg></div>
+          <div>You accepted <b data-n="herr">HerrMeindel</b>'s friend request. <span class="time">12:02 AM</span></div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar wer"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="wer">WerGuns</span><span class="time">7:41 PM</span></div>
+            <svg class="sticker" viewBox="0 0 160 160" aria-label="Waving sun sticker">
+              <g stroke="#f5a623" stroke-width="7" stroke-linecap="round">
+                <line x1="80" y1="12" x2="80" y2="30"/><line x1="80" y1="130" x2="80" y2="148"/>
+                <line x1="12" y1="80" x2="30" y2="80"/><line x1="130" y1="80" x2="148" y2="80"/>
+                <line x1="32" y1="32" x2="45" y2="45"/><line x1="115" y1="115" x2="128" y2="128"/>
+                <line x1="32" y1="128" x2="45" y2="115"/>
+              </g>
+              <circle cx="80" cy="80" r="44" fill="#ffc83d"/>
+              <circle cx="66" cy="74" r="5" fill="#3b2a14"/><circle cx="94" cy="74" r="5" fill="#3b2a14"/>
+              <path d="M62 92 Q80 108 98 92" fill="none" stroke="#3b2a14" stroke-width="5" stroke-linecap="round"/>
+              <circle cx="56" cy="88" r="6" fill="#ff8a65" opacity=".6"/><circle cx="104" cy="88" r="6" fill="#ff8a65" opacity=".6"/>
+              <g transform="rotate(-20 130 40)">
+                <rect x="118" y="22" width="22" height="30" rx="11" fill="#ffc83d" stroke="#f5a623" stroke-width="3"/>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar herr"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="herr">HerrMeindel</span><span class="time">7:42 PM</span></div>
+            <div class="line" data-msg="Hello">Hello</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar wer"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="wer">WerGuns</span><span class="time">7:42 PM</span></div>
+            <div class="line" data-msg="Message 1">Message 1</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar herr"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="herr">HerrMeindel</span><span class="time">7:42 PM</span></div>
+            <div class="line" data-msg="Message 2">Message 2</div><div class="line" data-msg="Message 3">Message 3</div><div class="attachment wide" id="att1"><span>Image 1<br>(click the gift icon to upload)</span></div><div class="line" data-msg="Message 4">Message 4</div><div class="line" data-msg="Message 5">Message 5</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar wer"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="wer">WerGuns</span><span class="time">7:44 PM</span></div>
+            <div class="line" data-msg="Message 6">Message 6</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar herr"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="herr">HerrMeindel</span><span class="time">7:44 PM</span></div>
+            <div class="attachment tall" id="att2"><span>Image 2<br>(click the gift icon to upload)</span></div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar wer"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="wer">WerGuns</span><span class="time">7:45 PM</span></div>
+            <div class="line" data-msg="Message 7">Message 7</div><div class="line" data-msg="Message 8">Message 8</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar herr"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="herr">HerrMeindel</span><span class="time">7:45 PM</span></div>
+            <div class="line" data-msg="Message 9">Message 9</div><div class="line" data-msg="Message 10">Message 10</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar wer"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="wer">WerGuns</span><span class="time">7:45 PM</span></div>
+            <div class="line" data-msg="Message 11">Message 11</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar herr"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="herr">HerrMeindel</span><span class="time">7:45 PM</span></div>
+            <div class="line" data-msg="Message 12">Message 12</div>
+          </div>
+        </div>
+
+        <div class="system">
+          <div class="slot"><svg class="icon" viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .3 2 .7 3a2 2 0 0 1-.4 2.1L8 10.2a16 16 0 0 0 6 6l1.4-1.4a2 2 0 0 1 2.1-.4c1 .4 2 .6 3 .7a2 2 0 0 1 1.5 2z"/></svg></div>
+          <div><b data-n="herr">HerrMeindel</b> started a call that lasted 2 minutes. <span class="time">7:45 PM</span></div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar herr"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="herr">HerrMeindel</span><span class="time">7:46 PM</span></div>
+            <div class="line" data-msg="Message 13">Message 13</div><a id="sentLink" href="https://www.tumblr.com/anboudoir" target="_blank" rel="noopener">https://www.tumblr.com/anboudoir</a>
+            <div class="embed">
+              <div>
+                <div class="provider" id="embProvider">Tumblr</div>
+                <a class="title" id="embTitle" href="https://www.tumblr.com/anboudoir" target="_blank" rel="noopener">AN Boudoir (@anboudoir) on Tumblr</a>
+                <div class="desc" id="embDesc">Sharing my photography. All orginal content.
+https://www.instagram.com/an.boudoir/</div>
+              </div>
+              <div class="thumb" id="embThumb"><img id="embThumbImg" alt="" hidden></div>
+            </div><div class="line" data-msg="Message 14">Message 14</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar wer"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="wer">WerGuns</span><span class="time">7:47 PM</span></div>
+            <div class="line" data-msg="Message 16">Message 16</div><div class="line" data-msg="Message 17">Message 17</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar herr"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="herr">HerrMeindel</span><span class="time">7:47 PM</span></div>
+            <div class="line" data-msg="Message 18">Message 18</div>
+          </div>
+        </div>
+
+        <div class="msg">
+          <div class="avatar wer"></div>
+          <div class="body">
+            <div class="meta"><span class="name" data-n="wer">WerGuns</span><span class="time">7:47 PM</span></div>
+            <div class="line" data-msg="Message 19">Message 19</div><div class="line" data-msg="Message 20">Message 20</div><div class="line failed" data-msg="Message 21">Message 21</div>
+          </div>
+        </div>
+
+        <div class="msg ephemeral">
+          <div class="avatar clyde"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="2" x2="12" y2="5"/><circle cx="12" cy="2" r="0.6" fill="#fff"/><rect x="4" y="5" width="16" height="13" rx="3"/><rect x="8" y="9" width="2" height="3" fill="#fff"/><rect x="14" y="9" width="2" height="3" fill="#fff"/><line x1="9" y1="15" x2="15" y2="15"/><line x1="2" y1="10" x2="2" y2="13"/><line x1="22" y1="10" x2="22" y2="13"/></svg></div>
+          <div class="body">
+            <div class="meta">
+              <span class="name">Clyde</span>
+              <span class="badge"><svg viewBox="0 0 24 24"><path d="M5 12l5 5L20 7"/></svg>APP</span>
+              <span class="time">7:48 PM</span>
+            </div>
+            <div class="line">Your message could not be delivered.</div>
+            <div class="gap"></div>
+            <div class="line">You can see the full list of reasons here: <a href="https://support.discord.com/hc/en-us/articles/360060145013" target="_blank" rel="noopener">https://support.discord.com/hc/en-us/articles/360060145013</a></div>
+            <div class="only-you">
+              <svg class="icon" viewBox="0 0 24 24"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7S1 12 1 12z"/><circle cx="12" cy="12" r="3"/></svg>
+              Only you can see this · <a href="#">Dismiss message</a>
+            </div>
+          </div>
+        </div>
+
+      </main>
+
+      <footer class="composer">
+        <div class="upload-panel app-panel" id="appPanel" hidden>
+          <div class="up-title">App message avatar</div>
+          <div class="up-row">
+            <div class="up-preview person-prev" id="pv-app"></div>
+            <div class="up-info">
+              <div class="up-buttons">
+                <label class="btn blue">Upload image<input type="file" accept="image/*" id="appFile" hidden></label>
+                <button class="btn grey" type="button" id="appReset">Reset</button>
+              </div>
+            </div>
+          </div>
+          <label class="field" style="margin-top:6px"><span>Or paste an image address</span>
+            <input type="url" id="appUrl" placeholder="https://example.com/avatar.png"></label>
+
+          <div class="up-title" style="margin-top:14px">Backup all settings</div>
+          <div class="up-buttons">
+            <button class="btn blue" type="button" id="backupSave">Save backup file</button>
+            <label class="btn grey">Load backup file<input type="file" accept=".json,application/json" id="backupLoad" hidden></label>
+          </div>
+          <div class="backup-note" id="backupNote">Everything saves automatically on this computer. A backup file also lets you move it to another PC or browser.</div>
+        </div>
+
+        <div class="upload-panel link-panel msg-panel" id="msgPanel" hidden>
+          <div class="up-title">Customize messages</div>
+          <div id="msgFields"></div>
+          <div class="up-buttons" style="justify-content:flex-end;margin-top:4px">
+            <button class="btn grey" type="button" id="msgReset">Reset all messages</button>
+          </div>
+        </div>
+
+        <div class="upload-panel link-panel" id="userPanel" hidden>
+          <div class="up-title">Customize people</div>
+
+          <div class="person">
+            <div class="up-preview person-prev" id="pv-herr"></div>
+            <div class="person-fields">
+              <label class="field"><span>Friend's display name</span>
+                <input type="text" id="u-herr-name" placeholder="HerrMeindel"></label>
+              <label class="field"><span>Friend's username</span>
+                <input type="text" id="u-herr-user" placeholder="herrmeindel"></label>
+              <label class="field"><span>Friend's avatar image address</span>
+                <input type="text" id="u-herr-av" placeholder="Paste a link or a screenshot (Ctrl+V)"></label>
+            </div>
+          </div>
+
+          <div class="person">
+            <div class="up-preview person-prev" id="pv-wer"></div>
+            <div class="person-fields">
+              <label class="field"><span>Your display name</span>
+                <input type="text" id="u-wer-name" placeholder="WerGuns"></label>
+              <label class="field"><span>Your avatar image address</span>
+                <input type="text" id="u-wer-av" placeholder="Paste a link or a screenshot (Ctrl+V)"></label>
+            </div>
+          </div>
+
+          <div class="person">
+            <div class="up-preview" id="pv-game" style="border-radius:8px"></div>
+            <div class="person-fields">
+              <label class="field"><span>Friend's activity: game name</span>
+                <input type="text" id="u-game" placeholder="Leave empty for no activity"></label>
+              <label class="field"><span>Game image address</span>
+                <input type="url" id="u-game-img" placeholder="https://example.com/game.png"></label>
+            </div>
+          </div>
+
+          <div class="up-buttons" style="justify-content:flex-end;margin-top:4px">
+            <button class="btn grey" type="button" id="userReset">Reset to original</button>
+          </div>
+        </div>
+
+        <div class="upload-panel link-panel" id="linkPanel" hidden>
+          <div class="up-title">Customize link preview</div>
+
+          <label class="field"><span>Sent link</span>
+            <input type="url" id="f-link" placeholder="https://..."></label>
+
+          <label class="field"><span>Site name</span>
+            <input type="text" id="f-provider" placeholder="Tumblr"></label>
+
+          <label class="field"><span>Details</span>
+            <textarea id="f-desc" rows="3" placeholder="Description (new lines allowed)"></textarea></label>
+
+          <div class="up-buttons" style="justify-content:flex-end;margin-top:4px">
+            <button class="btn grey" type="button" id="linkReset">Reset to original</button>
+          </div>
+        </div>
+
+        <div class="upload-panel" id="uploadPanel" hidden>
+          <div class="up-title">Customize images</div>
+          <div class="backup-note" style="margin:-4px 0 6px">Choose a file, paste an image link, or copy a screenshot and press Ctrl+V.</div>
+
+          <div class="up-row">
+            <div class="up-preview" id="prev1"></div>
+            <div class="up-info">
+              <div class="up-label">Image 1 <small>(after Message 3)</small></div>
+              <div class="up-buttons">
+                <label class="btn blue">Choose image<input type="file" accept="image/*" data-target="1" hidden></label>
+                <button class="btn grey" type="button" data-clear="1">Remove</button>
+              </div>
+              <input class="img-link" type="text" data-link="1" placeholder="Paste a link or a screenshot (Ctrl+V)">
+            </div>
+          </div>
+
+          <div class="up-row">
+            <div class="up-preview" id="prev2"></div>
+            <div class="up-info">
+              <div class="up-label">Image 2 <small>(LAND card, 7:44 PM)</small></div>
+              <div class="up-buttons">
+                <label class="btn blue">Choose image<input type="file" accept="image/*" data-target="2" hidden></label>
+                <button class="btn grey" type="button" data-clear="2">Remove</button>
+              </div>
+              <input class="img-link" type="text" data-link="2" placeholder="Paste a link or a screenshot (Ctrl+V)">
+            </div>
+          </div>
+        </div>
+        <div class="composer-box">
+          <button class="gift-btn" id="plusBtn" type="button" aria-label="Upload a file"><svg class="icon" viewBox="0 0 24 24" style="width:24px;height:24px"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg></button>
+          <input type="text" id="composerInput" placeholder="Message @HerrMeindel">
+          <div class="composer-icons" id="composerIcons">
+          <button class="gift-btn" id="giftBtn" type="button" aria-label="Send a gift"><svg class="icon" viewBox="0 0 24 24"><rect x="3" y="8" width="18" height="4" rx="1"/><path d="M5 12v8h14v-8M12 8v12M12 8S10 3 7.5 4.5 9 8 12 8zM12 8s2-5 4.5-3.5S15 8 12 8z"/></svg></button>
+          <button class="gif-btn" id="gifBtn" type="button" aria-label="GIFs"><span class="gif">GIF</span></button>
+          <button class="gift-btn" id="stickerBtn" type="button" aria-label="Stickers"><svg class="icon" viewBox="0 0 24 24"><path d="M14 3H6a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3h8l7-7V6a3 3 0 0 0-3-3z"/><path d="M14 21v-4a3 3 0 0 1 3-3h4"/></svg></button>
+          <button class="gift-btn" id="smileBtn" type="button" aria-label="Emoji"><svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><path d="M9 9h.01M15 9h.01"/></svg></button>
+          <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="2"/><rect x="14" y="3" width="7" height="7" rx="2"/><rect x="3" y="14" width="7" height="7" rx="2"/><path d="M17.5 14v7M14 17.5h7"/></svg>
+          </div>
+        </div>
+      </footer>
+
+    </section>
+
+    <!-- ===== Profile panel ===== -->
+    <div class="resizer" id="resizer" title="Drag to resize · double-click to reset"></div>
+
+    <aside class="profile" id="profilePanel">
+<!-- Hidden page: drag in from the right edge of the profile card -->
+
+      <div class="banner">
+        <div class="actions">
+          <button class="round-btn" aria-label="Add friend"><svg class="icon" viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M19 8v6M16 11h6"/></svg></button>
+          <button class="round-btn" aria-label="More"><svg class="icon" viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg></button>
+        </div>
+        <div class="big-avatar">
+          <div class="avatar herr"></div>
+          <div class="status"></div>
+        </div>
+      </div>
+
+      <div class="profile-body">
+        <div class="warning">
+          <svg viewBox="0 0 24 24"><path d="M12 2L1 21h22z" fill="#f0b232"/><path d="M12 9v5M12 17h.01" stroke="#232428" stroke-width="2.4" stroke-linecap="round"/></svg>
+          Unable to load parts of profile
+        </div>
+
+        <div class="display-name" data-n="herr">HerrMeindel</div>
+        <div class="username" data-u="herr">herrmeindel</div>
+
+        <div class="label">Member Since</div>
+        <div class="value">May 6, 2026</div>
+
+        <div class="spacer"></div>
+
+        <button class="full-btn" id="viewFullProfile" type="button">View Full Profile</button>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+
+
+<div class="reveal" id="reveal" aria-hidden="true">
+  <button class="reveal-close" id="revealClose" type="button" aria-label="Close">&times;</button>
+  <div class="reveal-inner">
+    <div class="reveal-text" data-text="its me fuckin RAN$ZOM">its me fuckin RAN$ZOM</div>
+  </div>
+</div>
+
+<!-- Full profile pop-up (opens from "View Full Profile") -->
+<div class="fp-backdrop" id="fpBackdrop" hidden>
+  <div class="fp-modal" role="dialog" aria-modal="true" aria-label="Full profile">
+    <button class="fp-close" id="fpClose" type="button" aria-label="Close">
+      <svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+
+    <section class="fp-left">
+      <div class="fp-banner"></div>
+      <div class="fp-avatar-wrap">
+        <div class="avatar herr fp-avatar"></div>
+        <span class="fp-status"></span>
+      </div>
+
+      <div class="fp-info">
+        <div class="fp-name" data-n="herr">HerrMeindel</div>
+        <div class="fp-user" data-u="herr">herrmeindel</div>
+
+        <div class="fp-actions">
+          <button class="btn blue fp-add" type="button">
+            <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6"/><path d="M19 8v6M16 11h6"/></svg>
+            Add Friend
+          </button>
+          <button class="fp-square" type="button" aria-label="Message">
+            <svg viewBox="0 0 24 24"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12z"/></svg>
+          </button>
+          <button class="fp-square" type="button" aria-label="More">
+            <svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg>
+          </button>
+        </div>
+
+        <div class="fp-label">Member Since</div>
+        <div class="fp-since">
+          <svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>
+          May 6, 2026
+        </div>
+
+        <div class="fp-label">Connections</div>
+        <div class="fp-conn">
+          <div class="fp-conn-icon" id="connIcon">
+            <svg viewBox="0 0 24 24"><path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/></svg>
+          </div>
+          <div class="fp-conn-body">
+            <a class="fp-conn-name" id="connName" href="#" target="_blank" rel="noopener">
+              <span id="connTitle"></span>
+              <svg viewBox="0 0 24 24"><path d="M7 17L17 7M9 7h8v8"/></svg>
+            </a>
+            <div class="fp-conn-site" id="connSite"></div>
+            <div class="fp-conn-desc" id="connDesc"></div>
+          </div>
+        </div>
+
+        <div class="fp-label">Note (only visible to you)</div>
+        <textarea class="fp-note" id="fpNote" rows="1" placeholder="Click to add a note"></textarea>
+      </div>
+    </section>
+
+    <section class="fp-right">
+      <div class="fp-tabs" role="tablist">
+        <button class="fp-tab active" type="button" data-tab="activity">Activity</button>
+        <button class="fp-tab" type="button" data-tab="friends">No Mutual Friends</button>
+        <button class="fp-tab" type="button" data-tab="servers">No Mutual Servers</button>
+      </div>
+
+      <div class="fp-pane" data-pane="activity">
+        <div id="fpActivity">
+          <div class="fp-small">Current activity</div>
+          <div class="fp-card">
+            <div class="fp-card-top">
+              <span>Playing</span>
+              <svg viewBox="0 0 24 24"><path d="M5 12h.01M12 12h.01M19 12h.01"/></svg>
+            </div>
+            <div class="fp-game">
+              <div class="fp-game-img" id="fpGameImg">
+                <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3"/><path d="M16 12h.01M18 14h.01"/></svg>
+              </div>
+              <div>
+                <div class="fp-game-name" id="fpGameName">Game</div>
+                <div class="fp-game-time">
+                  <svg viewBox="0 0 24 24"><rect x="2" y="7" width="20" height="11" rx="5"/><path d="M7 11v3M5.5 12.5h3"/></svg>
+                  <span id="fpTimer">0:00</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="fp-empty" id="fpNoActivity" hidden>
+          <span data-n="herr">HerrMeindel</span> doesn't have any activity right now.
+        </div>
+      </div>
+      <div class="fp-pane" data-pane="friends" hidden>
+        <div class="fp-empty">No friends in common</div>
+      </div>
+      <div class="fp-pane" data-pane="servers" hidden>
+        <div class="fp-empty">No servers in common</div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- Grip on the far right edge: drag left to reveal the hidden page in the profile card -->
+<div class="edge-grab" id="edgeGrab" title="Drag left"></div>
+
+<script>
+  // ===== Permanent storage =====
+  // Text settings live in localStorage; uploaded images go in IndexedDB, which holds much bigger files.
+  // Both stay on this computer after the PC is shut down or restarted.
+  var IDB = (function () {
+    var dbp = null;
+    function db() {
+      if (!dbp) {
+        dbp = new Promise(function (res, rej) {
+          try {
+            var r = indexedDB.open('dm-clone', 1);
+            r.onupgradeneeded = function () { r.result.createObjectStore('kv'); };
+            r.onsuccess = function () { res(r.result); };
+            r.onerror = function () { rej(r.error); };
+          } catch (err) { rej(err); }
+        });
+      }
+      return dbp;
+    }
+    function run(mode, fn) {
+      return db().then(function (d) {
+        return new Promise(function (res, rej) {
+          var tx = d.transaction('kv', mode);
+          var req = fn(tx.objectStore('kv'));
+          tx.oncomplete = function () { res(req && req.result); };
+          tx.onerror = function () { rej(tx.error); };
+        });
+      });
+    }
+    return {
+      get: function (k) {
+        return run('readonly', function (st) { return st.get(k); }).catch(function () {
+          try { return localStorage.getItem(k); } catch (e) { return null; }
+        });
+      },
+      set: function (k, v) {
+        return run('readwrite', function (st) { return st.put(v, k); }).catch(function () {
+          try { localStorage.setItem(k, v); } catch (e) {}
+        });
+      },
+      del: function (k) {
+        try { localStorage.removeItem(k); } catch (e) {}
+        return run('readwrite', function (st) { return st.delete(k); }).catch(function () {});
+      },
+      keys: function () {
+        return run('readonly', function (st) { return st.getAllKeys(); }).catch(function () { return []; });
+      }
+    };
+  })();
+  // ask the browser not to clear this page's saved data when space runs low
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (err) {}
+
+  var m = document.getElementById('messages');
+  var giftBtn = document.getElementById('giftBtn');
+  var panel = document.getElementById('uploadPanel');
+
+  // show / hide the uploader when the gift icon is clicked
+  giftBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    panel.hidden = !panel.hidden;
+    giftBtn.classList.toggle('active', !panel.hidden);
+  });
+  document.addEventListener('click', function (e) {
+    if (!panel.hidden && !panel.contains(e.target)) {
+      panel.hidden = true;
+      giftBtn.classList.remove('active');
+    }
+  });
+
+  function setImage(n, src) {
+    var box = document.getElementById('att' + n);
+    var prev = document.getElementById('prev' + n);
+    var old = box.querySelector('img');
+    if (old) old.remove();
+    if (src) {
+      var img = document.createElement('img');
+      img.src = src;
+      img.alt = 'Image ' + n;
+      box.appendChild(img);
+      box.classList.add('has-img');
+      prev.style.backgroundImage = 'url("' + String(src).replace(/["\\\n\r]/g, encodeURIComponent) + '")';
+    } else {
+      box.classList.remove('has-img');
+      prev.style.backgroundImage = '';
+    }
+  }
+
+  // pick a file -> show it in the chat and remember it in this browser
+  panel.querySelectorAll('input[type=file]').forEach(function (input) {
+    input.addEventListener('change', function () {
+      var file = input.files[0];
+      if (!file) return;
+      var n = input.dataset.target;
+      var reader = new FileReader();
+      reader.onload = function () {
+        setImage(n, reader.result);
+        IDB.set('dm-image-' + n, reader.result);
+      };
+      reader.readAsDataURL(file);
+      input.value = '';
+    });
+  });
+
+  panel.querySelectorAll('[data-clear]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var n = btn.dataset.clear;
+      setImage(n, null);
+      IDB.del('dm-image-' + n);
+    });
+  });
+
+  // restore images saved earlier
+  ['1', '2'].forEach(function (n) {
+    var old = null;
+    try { old = localStorage.getItem('dm-image-' + n); } catch (err) {}
+    if (old) {           // move anything saved the old way into the bigger storage
+      setImage(n, old);
+      IDB.set('dm-image-' + n, old).then(function () {
+        try { localStorage.removeItem('dm-image-' + n); } catch (err) {}
+      });
+    } else {
+      IDB.get('dm-image-' + n).then(function (v) { if (v) setImage(n, v); });
+    }
+  });
+
+  // ===== Link preview customizer (GIF icon) =====
+  var gifBtn = document.getElementById('gifBtn');
+  var linkPanel = document.getElementById('linkPanel');
+
+  gifBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    linkPanel.hidden = !linkPanel.hidden;
+    gifBtn.classList.toggle('active', !linkPanel.hidden);
+    panel.hidden = true; giftBtn.classList.remove('active');
+  });
+  giftBtn.addEventListener('click', function () {
+    linkPanel.hidden = true; gifBtn.classList.remove('active');
+  });
+  document.addEventListener('click', function (e) {
+    if (!linkPanel.hidden && !linkPanel.contains(e.target)) {
+      linkPanel.hidden = true; gifBtn.classList.remove('active');
+    }
+  });
+
+  var el = {
+    link: document.getElementById('sentLink'),
+    provider: document.getElementById('embProvider'),
+    title: document.getElementById('embTitle'),
+    desc: document.getElementById('embDesc'),
+    thumb: document.getElementById('embThumb'),
+    thumbImg: document.getElementById('embThumbImg')
+  };
+  var original = {
+    link: el.link.getAttribute('href'),
+    provider: el.provider.textContent,
+    thumb: '',
+    title: el.title.textContent,
+    titlelink: el.title.getAttribute('href'),
+    desc: el.desc.textContent
+  };
+  var fields = {
+    link: document.getElementById('f-link'),
+    provider: document.getElementById('f-provider'),
+    desc: document.getElementById('f-desc')
+  };
+
+  function safeUrl(u) {
+    u = (u || '').trim();
+    return /^(https?:|data:image\/)/i.test(u) ? u : '#';
+  }
+
+  function applyLink(d) {
+    // same details also show under Connections in the full profile pop-up
+    document.getElementById('connTitle').textContent = d.link;
+    document.getElementById('connName').href = safeUrl(d.link);
+    document.getElementById('connSite').textContent = d.provider;
+    document.getElementById('connDesc').textContent = d.desc;
+    el.link.textContent = d.link;
+    el.link.href = safeUrl(d.link);
+    el.provider.textContent = d.provider;
+    el.provider.style.display = d.provider ? '' : 'none';
+    el.title.textContent = d.link;
+    el.title.href = safeUrl(d.link);
+    el.desc.textContent = d.desc;
+  }
+
+  function readFields() {
+    var d = {};
+    Object.keys(fields).forEach(function (k) { d[k] = fields[k].value; });
+    return d;
+  }
+  function fillFields(d) {
+    Object.keys(fields).forEach(function (k) { fields[k].value = d[k] || ''; });
+  }
+
+  var saved = null;
+  try { saved = JSON.parse(localStorage.getItem('dm-link-preview') || 'null'); } catch (err) {}
+  var current = Object.assign({}, original, saved || {});
+  fillFields(current);
+  applyLink(current);
+
+  Object.keys(fields).forEach(function (k) {
+    fields[k].addEventListener('input', function () {
+      var d = readFields();
+      applyLink(d);
+      try { localStorage.setItem('dm-link-preview', JSON.stringify(d)); } catch (err) {}
+    });
+  });
+
+  document.getElementById('linkReset').addEventListener('click', function () {
+    fillFields(original);
+    applyLink(original);
+    try { localStorage.removeItem('dm-link-preview'); } catch (err) {}
+  });
+
+  // ===== People customizer (sticker icon) =====
+  var stickerBtn = document.getElementById('stickerBtn');
+  var userPanel = document.getElementById('userPanel');
+  var allToggles = [[giftBtn, panel], [gifBtn, linkPanel], [stickerBtn, userPanel]];
+
+  function closeOthers(keep) {
+    allToggles.forEach(function (t) {
+      if (t[1] !== keep) { t[1].hidden = true; t[0].classList.remove('active'); }
+    });
+  }
+  stickerBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    closeOthers(userPanel);
+    userPanel.hidden = !userPanel.hidden;
+    stickerBtn.classList.toggle('active', !userPanel.hidden);
+  });
+  giftBtn.addEventListener('click', function () { userPanel.hidden = true; stickerBtn.classList.remove('active'); });
+  gifBtn.addEventListener('click', function () { userPanel.hidden = true; stickerBtn.classList.remove('active'); });
+  document.addEventListener('click', function (e) {
+    if (!userPanel.hidden && !userPanel.contains(e.target)) {
+      userPanel.hidden = true; stickerBtn.classList.remove('active');
+    }
+  });
+
+  var people = {
+    herrName: document.getElementById('u-herr-name'),
+    herrUser: document.getElementById('u-herr-user'),
+    herrAv:   document.getElementById('u-herr-av'),
+    werName:  document.getElementById('u-wer-name'),
+    werAv:    document.getElementById('u-wer-av')
+  };
+  var peopleOriginal = { herrName: 'HerrMeindel', herrUser: 'herrmeindel', herrAv: '', werName: 'WerGuns', werAv: '' };
+
+  function setAvatars(cls, url, previewId) {
+    var ok = /^(https?:\/\/|data:image\/)/i.test((url || '').trim());
+    var css = ok ? 'url("' + url.trim().replace(/["\\\n\r]/g, encodeURIComponent) + '")' : '';
+    document.querySelectorAll('.avatar.' + cls).forEach(function (a) {
+      a.style.backgroundImage = css;
+      a.classList.toggle('custom', ok);
+    });
+    var pv = document.getElementById(previewId);
+    pv.style.backgroundImage = css;
+    pv.style.backgroundSize = 'cover';
+  }
+
+
+  // One avatar for everything: the friend's avatar is also the link-preview picture and Connections icon
+  function syncLinkPicture(url) {
+    url = (url || '').trim();
+    var ok = /^(https?:\/\/|data:image\/)/i.test(url);
+    var img = document.getElementById('embThumbImg');
+    if (ok) { img.src = url; img.hidden = false; }
+    else { img.removeAttribute('src'); img.hidden = true; }
+    var ci = document.getElementById('connIcon');
+    ci.style.backgroundImage = ok ? 'url("' + url.replace(/["\\\n\r]/g, encodeURIComponent) + '")' : '';
+    ci.classList.toggle('has-img', ok);
+  }
+
+  var pastedAv = { herr: '', wer: '' };  // screenshots pasted into the avatar boxes
+
+  function applyPeople(d) {
+    var hn = d.herrName || peopleOriginal.herrName;
+    var hu = d.herrUser || peopleOriginal.herrUser;
+    var wn = d.werName  || peopleOriginal.werName;
+    document.querySelectorAll('[data-n="herr"]').forEach(function (e) { e.textContent = hn; });
+    document.querySelectorAll('[data-n="wer"]').forEach(function (e) { e.textContent = wn; });
+    document.querySelectorAll('[data-u="herr"]').forEach(function (e) { e.textContent = hu; });
+    document.getElementById('searchInput').placeholder = 'Search ' + hu;
+    document.getElementById('composerInput').placeholder = 'Message @' + hn;
+    document.title = 'Direct Messages — ' + hn;
+    var herrPic = (d.herrAv || '').trim() || pastedAv.herr;
+    var werPic = (d.werAv || '').trim() || pastedAv.wer;
+    setAvatars('herr', herrPic, 'pv-herr');
+    syncLinkPicture(herrPic);
+    setAvatars('wer', werPic, 'pv-wer');
+  }
+
+  function readPeople() {
+    var d = {};
+    Object.keys(people).forEach(function (k) { d[k] = people[k].value; });
+    return d;
+  }
+  function fillPeople(d) {
+    Object.keys(people).forEach(function (k) { people[k].value = d[k] || ''; });
+  }
+
+  var savedPeople = null;
+  try { savedPeople = JSON.parse(localStorage.getItem('dm-people') || 'null'); } catch (err) {}
+  var currentPeople = Object.assign({}, peopleOriginal, savedPeople || {});
+  fillPeople(currentPeople);
+  applyPeople(currentPeople);
+
+  // typing the friend's display name also fills in their username (lowercase, no spaces, like the original)
+  function toUsername(name) { return name.toLowerCase().replace(/\s+/g, ''); }
+
+  Object.keys(people).forEach(function (k) {
+    people[k].addEventListener('input', function () {
+      if (k === 'herrName') people.herrUser.value = toUsername(people.herrName.value);
+      var d = readPeople();
+      applyPeople(d);
+      try { localStorage.setItem('dm-people', JSON.stringify(d)); } catch (err) {}
+    });
+  });
+
+
+  // ===== Paste a screenshot straight into an avatar box =====
+  [['herr', 'herrAv'], ['wer', 'werAv']].forEach(function (pair) {
+    var who = pair[0], box = people[pair[1]];
+    var normalHint = box.placeholder;
+    function hint() {
+      box.placeholder = pastedAv[who] ? 'Screenshot pasted ✓ (paste again or type a link)' : normalHint;
+    }
+    box.addEventListener('paste', function (e) {
+      var items = (e.clipboardData && e.clipboardData.items) || [];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file' && /^image\//.test(items[i].type)) {
+          e.preventDefault();
+          var reader = new FileReader();
+          reader.onload = function () {
+            pastedAv[who] = reader.result;
+            IDB.set('dm-avatar-' + who, reader.result);
+            box.value = '';
+            hint();
+            var d = readPeople();
+            applyPeople(d);
+            try { localStorage.setItem('dm-people', JSON.stringify(d)); } catch (err) {}
+          };
+          reader.readAsDataURL(items[i].getAsFile());
+          return;
+        }
+      }
+    });
+    IDB.get('dm-avatar-' + who).then(function (v) {
+      if (v) { pastedAv[who] = v; hint(); applyPeople(readPeople()); }
+    });
+    document.getElementById('userReset').addEventListener('click', function () {
+      pastedAv[who] = '';
+      IDB.del('dm-avatar-' + who);
+      hint();
+      applyPeople(readPeople());
+    });
+  });
+
+  document.getElementById('userReset').addEventListener('click', function () {
+    fillPeople(peopleOriginal);
+    applyPeople(peopleOriginal);
+    try { localStorage.removeItem('dm-people'); } catch (err) {}
+  });
+
+  // ===== Message customizer (smile icon) =====
+  var smileBtn = document.getElementById('smileBtn');
+  var msgPanel = document.getElementById('msgPanel');
+  var msgFields = document.getElementById('msgFields');
+
+  smileBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    closeOthers(msgPanel);
+    msgPanel.hidden = !msgPanel.hidden;
+    smileBtn.classList.toggle('active', !msgPanel.hidden);
+  });
+  [giftBtn, gifBtn, stickerBtn].forEach(function (b) {
+    b.addEventListener('click', function () { msgPanel.hidden = true; smileBtn.classList.remove('active'); });
+  });
+  smileBtn.addEventListener('click', function () {
+    [[giftBtn, panel], [gifBtn, linkPanel], [stickerBtn, userPanel]].forEach(function (t) {
+      t[1].hidden = true; t[0].classList.remove('active');
+    });
+  }, true);
+  document.addEventListener('click', function (e) {
+    if (!msgPanel.hidden && !msgPanel.contains(e.target)) {
+      msgPanel.hidden = true; smileBtn.classList.remove('active');
+    }
+  });
+
+  var msgLines = Array.prototype.slice.call(document.querySelectorAll('.line[data-msg]'));
+  var savedMsgs = {};
+  try { savedMsgs = JSON.parse(localStorage.getItem('dm-messages') || '{}') || {}; } catch (err) {}
+  var msgInputs = [];
+
+  msgLines.forEach(function (line) {
+    var key = line.getAttribute('data-msg');
+    var msgEl = line.closest('.msg');
+    var nameEl = msgEl && msgEl.querySelector('.name');
+    var timeEl = msgEl && msgEl.querySelector('.time');
+
+    var row = document.createElement('label');
+    row.className = 'msg-row';
+    var tagEl = document.createElement('div');
+    tagEl.className = 'who-tag';
+    var who = document.createElement('span');
+    var small = document.createElement('small');
+    small.textContent = key + (timeEl ? ' · ' + timeEl.textContent : '');
+    tagEl.appendChild(who);
+    tagEl.appendChild(small);
+
+    var ta = document.createElement('textarea');
+    ta.rows = 1;
+    ta.placeholder = key;
+    ta.value = savedMsgs[key] != null ? savedMsgs[key] : key;
+
+    function refreshWho() { who.textContent = nameEl ? nameEl.textContent : ''; }
+    function apply() { line.textContent = ta.value.trim() === '' ? key : ta.value; }
+    refreshWho();
+    apply();
+
+    ta.addEventListener('input', function () {
+      apply();
+      savedMsgs[key] = ta.value;
+      try { localStorage.setItem('dm-messages', JSON.stringify(savedMsgs)); } catch (err) {}
+    });
+    ta.addEventListener('focus', refreshWho);
+    smileBtn.addEventListener('click', refreshWho);
+
+    row.appendChild(tagEl);
+    row.appendChild(ta);
+    msgFields.appendChild(row);
+    msgInputs.push({ ta: ta, apply: apply, key: key });
+  });
+
+  document.getElementById('msgReset').addEventListener('click', function () {
+    msgInputs.forEach(function (x) { x.ta.value = x.key; x.apply(); });
+    savedMsgs = {};
+    try { localStorage.removeItem('dm-messages'); } catch (err) {}
+  });
+
+  // ===== App avatar customizer (+ icon) =====
+  var plusBtn = document.getElementById('plusBtn');
+  var appPanel = document.getElementById('appPanel');
+  var appFile = document.getElementById('appFile');
+  var appUrl = document.getElementById('appUrl');
+  var otherToggles = [[giftBtn, panel], [gifBtn, linkPanel], [stickerBtn, userPanel], [smileBtn, msgPanel]];
+
+  plusBtn.addEventListener('click', function (e) {
+    e.stopPropagation();
+    otherToggles.forEach(function (t) { t[1].hidden = true; t[0].classList.remove('active'); });
+    appPanel.hidden = !appPanel.hidden;
+    plusBtn.classList.toggle('active', !appPanel.hidden);
+  });
+  otherToggles.forEach(function (t) {
+    t[0].addEventListener('click', function () { appPanel.hidden = true; plusBtn.classList.remove('active'); });
+  });
+  document.addEventListener('click', function (e) {
+    if (!appPanel.hidden && !appPanel.contains(e.target)) {
+      appPanel.hidden = true; plusBtn.classList.remove('active');
+    }
+  });
+
+  function setAppAvatar(src) {
+    src = (src || '').trim();
+    var ok = /^https?:\/\//i.test(src) || /^data:image\//i.test(src);
+    var css = ok ? 'url("' + src.replace(/["\\\n\r]/g, encodeURIComponent) + '")' : '';
+    document.querySelectorAll('.avatar.clyde').forEach(function (a) {
+      a.style.backgroundImage = css;
+      a.classList.toggle('custom', ok);
+    });
+    var pv = document.getElementById('pv-app');
+    pv.style.backgroundImage = css;
+    pv.style.backgroundSize = 'cover';
+  }
+  function saveApp(src) {
+    if (src) IDB.set('dm-app-avatar', src);
+    else IDB.del('dm-app-avatar');
+  }
+
+  appFile.addEventListener('change', function () {
+    var file = appFile.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      setAppAvatar(reader.result);
+      saveApp(reader.result);
+      appUrl.value = '';
+    };
+    reader.readAsDataURL(file);
+    appFile.value = '';
+  });
+  appUrl.addEventListener('input', function () {
+    setAppAvatar(appUrl.value);
+    saveApp(appUrl.value.trim());
+  });
+  document.getElementById('appReset').addEventListener('click', function () {
+    appUrl.value = '';
+    setAppAvatar('');
+    saveApp('');
+  });
+
+  (function () {
+    var old = null;
+    try { old = localStorage.getItem('dm-app-avatar'); } catch (err) {}
+    function show(v) {
+      if (!v) return;
+      setAppAvatar(v);
+      if (!/^data:/i.test(v)) appUrl.value = v;
+    }
+    if (old) {
+      show(old);
+      IDB.set('dm-app-avatar', old).then(function () {
+        try { localStorage.removeItem('dm-app-avatar'); } catch (err) {}
+      });
+    } else {
+      IDB.get('dm-app-avatar').then(show);
+    }
+  })();
+
+  // ===== Drag to resize the chat / profile split =====
+  (function () {
+    var handle = document.getElementById('resizer');
+    var profileEl = document.getElementById('profilePanel');
+    var DEFAULT_W = 288, MIN_W = 200, MAX_W = 4000;
+
+    function setWidth(w) {
+      var maxAllowed = Math.min(MAX_W, window.innerWidth - 260);
+      w = Math.max(MIN_W, Math.min(maxAllowed, w));
+      profileEl.style.width = w + 'px';
+      return w;
+    }
+
+    try {
+      var savedW = parseInt(localStorage.getItem('dm-profile-width'), 10);
+      if (savedW) setWidth(savedW);
+    } catch (err) {}
+
+    var startX = 0, startW = 0, dragging = false;
+
+    function onMove(e) {
+      if (!dragging) return;
+      var x = e.touches ? e.touches[0].clientX : e.clientX;
+      setWidth(startW + (startX - x));
+      window.dispatchEvent(new Event('resize'));
+      if (e.cancelable) e.preventDefault();
+    }
+    function onUp() {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('dragging');
+      document.body.classList.remove('resizing');
+      try { localStorage.setItem('dm-profile-width', parseInt(profileEl.style.width, 10)); } catch (err) {}
+    }
+    function onDown(e) {
+      dragging = true;
+      startX = e.touches ? e.touches[0].clientX : e.clientX;
+      startW = profileEl.getBoundingClientRect().width;
+      handle.classList.add('dragging');
+      document.body.classList.add('resizing');
+      if (e.cancelable) e.preventDefault();
+    }
+
+    handle.addEventListener('mousedown', onDown);
+    handle.addEventListener('touchstart', onDown, { passive: false });
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchend', onUp);
+
+    handle.addEventListener('dblclick', function () {
+      profileEl.style.width = DEFAULT_W + 'px';
+      try { localStorage.removeItem('dm-profile-width'); } catch (err) {}
+    });
+  })();
+
+  // ===== Drag the whole profile card left to reveal the hidden page =====
+  (function () {
+    var grab = document.getElementById('edgeGrab');
+    var card = document.getElementById('profilePanel');
+    var rev = document.getElementById('reveal');
+    var closeBtn = document.getElementById('revealClose');
+    var tools = document.getElementById('headerTools');
+    var titleIcons = document.getElementById('titleIcons');
+    var titleCenter = document.getElementById('titleCenter');
+    var composerIcons = document.getElementById('composerIcons');
+    // the hidden customization panels that open from the message-bar icons
+    var iconPanels = ['uploadPanel', 'linkPanel', 'userPanel', 'msgPanel'].map(function (id) {
+      return document.getElementById(id);
+    });
+    var offset = 0, startX = 0, startOffset = 0, dragging = false;
+
+    function x(e) { return e.touches ? e.touches[0].clientX : e.clientX; }
+    function fullOffset() { return Math.max(card.getBoundingClientRect().width + 8, window.innerWidth - 80); }
+
+    function place(o, animate) {
+      offset = Math.max(0, Math.min(fullOffset(), o));
+      var t = offset ? 'translateX(' + (-offset) + 'px)' : '';
+      [card, tools, titleIcons, titleCenter, composerIcons, document.getElementById('resizer')].concat(iconPanels).forEach(function (el) {
+        el.classList.toggle('sliding', !animate);
+        el.style.transform = t;
+      });
+      [tools, titleIcons, titleCenter, composerIcons].forEach(function (el) {
+        el.classList.toggle('moved', offset > 0);
+      });
+      rev.style.width = Math.max(card.getBoundingClientRect().width + 16, offset + 8) + 'px';
+      rev.classList.toggle('shown', offset > 0);
+      rev.classList.toggle('open', offset > 0);
+      rev.setAttribute('aria-hidden', offset > 0 ? 'false' : 'true');
+    }
+    function settle() {
+      if (offset < 12) {
+        place(0, true);
+        setTimeout(function () { if (!offset) rev.classList.remove('shown', 'open'); }, 360);
+      }
+    }
+
+    function down(e) {
+      if (e.target === closeBtn) return;
+      dragging = true;
+      startX = x(e);
+      startOffset = offset;
+      document.body.classList.add('resizing');
+      if (e.cancelable) e.preventDefault();
+    }
+    function move(e) {
+      if (!dragging) return;
+      place(startOffset + (startX - x(e)), false);
+      if (e.cancelable) e.preventDefault();
+    }
+    function up() {
+      if (!dragging) return;
+      dragging = false;
+      document.body.classList.remove('resizing');
+      settle();
+    }
+
+    // start from the right edge, or grab the moved card / hidden page to push it back
+    [grab, rev].forEach(function (el) {
+      el.addEventListener('mousedown', down);
+      el.addEventListener('touchstart', down, { passive: false });
+    });
+    card.addEventListener('mousedown', function (e) {
+      if (offset > 0 && !e.target.closest('button, input, a, label')) down(e);
+    });
+    card.addEventListener('touchstart', function (e) {
+      if (offset > 0 && !e.target.closest('button, input, a, label')) down(e);
+    }, { passive: false });
+    document.addEventListener('mousemove', move);
+    document.addEventListener('touchmove', move, { passive: false });
+    document.addEventListener('mouseup', up);
+    document.addEventListener('touchend', up);
+
+    closeBtn.addEventListener('click', function () { place(0, true); settle(); });
+    window.addEventListener('resize', function () { if (offset) place(offset, false); });
+  })();
+
+  // ===== Full profile pop-up =====
+  (function () {
+    var backdrop = document.getElementById('fpBackdrop');
+    var openBtn = document.getElementById('viewFullProfile');
+    var closeBtn = document.getElementById('fpClose');
+    var note = document.getElementById('fpNote');
+    var timerEl = document.getElementById('fpTimer');
+    var startedAt = Date.now() - (37 * 60 + 53) * 1000;
+    var tick = null;
+
+    function fmt(sec) {
+      var h = Math.floor(sec / 3600), mi = Math.floor(sec % 3600 / 60), se = sec % 60;
+      var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+      return h ? h + ':' + pad(mi) + ':' + pad(se) : mi + ':' + pad(se);
+    }
+    function update() { timerEl.textContent = fmt(Math.floor((Date.now() - startedAt) / 1000)); }
+
+    function open() {
+      backdrop.hidden = false;
+      update();
+      tick = setInterval(update, 1000);
+      closeBtn.focus();
+    }
+    function close() {
+      backdrop.hidden = true;
+      clearInterval(tick);
+      openBtn.focus();
+    }
+    openBtn.addEventListener('click', open);
+    closeBtn.addEventListener('click', close);
+    backdrop.addEventListener('mousedown', function (e) { if (e.target === backdrop) close(); });
+    document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !backdrop.hidden) close(); });
+
+    // tabs
+    var tabs = backdrop.querySelectorAll('.fp-tab');
+    tabs.forEach(function (t) {
+      t.addEventListener('click', function () {
+        tabs.forEach(function (x) { x.classList.toggle('active', x === t); });
+        backdrop.querySelectorAll('.fp-pane').forEach(function (p) {
+          p.hidden = p.getAttribute('data-pane') !== t.getAttribute('data-tab');
+        });
+      });
+    });
+
+    // note (saved in this browser)
+    try { note.value = localStorage.getItem('dm-note') || ''; } catch (err) {}
+    function grow() { note.style.height = 'auto'; note.style.height = note.scrollHeight + 'px'; }
+    note.addEventListener('input', function () {
+      grow();
+      try { localStorage.setItem('dm-note', note.value); } catch (err) {}
+    });
+    setTimeout(grow, 0);
+
+    // activity (set from the sticker-icon panel)
+    var gameIn = document.getElementById('u-game');
+    var gameImgIn = document.getElementById('u-game-img');
+    var gameName = document.getElementById('fpGameName');
+    var gameImg = document.getElementById('fpGameImg');
+    var pvGame = document.getElementById('pv-game');
+    var actBox = document.getElementById('fpActivity');
+    var noAct = document.getElementById('fpNoActivity');
+
+    function applyActivity() {
+      var name = gameIn.value.trim();
+      var img = gameImgIn.value.trim();
+      actBox.hidden = !name;
+      noAct.hidden = !!name;
+      gameName.textContent = name;
+      var ok = /^https?:\/\//i.test(img);
+      var css = ok ? 'url("' + img.replace(/["\\\n\r]/g, encodeURIComponent) + '")' : '';
+      gameImg.style.backgroundImage = css;
+      gameImg.classList.toggle('has-img', ok);
+      pvGame.style.backgroundImage = css;
+      pvGame.style.backgroundSize = 'cover';
+    }
+    try {
+      var savedAct = JSON.parse(localStorage.getItem('dm-activity') || 'null');
+      if (savedAct) { gameIn.value = savedAct.game || ''; gameImgIn.value = savedAct.img || ''; }
+    } catch (err) {}
+    [gameIn, gameImgIn].forEach(function (inp) {
+      inp.addEventListener('input', function () {
+        applyActivity();
+        try { localStorage.setItem('dm-activity', JSON.stringify({ game: gameIn.value, img: gameImgIn.value })); } catch (err) {}
+      });
+    });
+    document.getElementById('userReset').addEventListener('click', function () {
+      gameIn.value = ''; gameImgIn.value = '';
+      applyActivity();
+      try { localStorage.removeItem('dm-activity'); } catch (err) {}
+    });
+    applyActivity();
+  })();
+
+  // ===== Backup file: save / load every setting =====
+  (function () {
+    var note = document.getElementById('backupNote');
+    document.getElementById('backupSave').addEventListener('click', function () {
+      var data = { app: 'dm-clone', version: 1, local: {}, images: {} };
+      try {
+        for (var i = 0; i < localStorage.length; i++) {
+          var k = localStorage.key(i);
+          if (k && k.indexOf('dm-') === 0) data.local[k] = localStorage.getItem(k);
+        }
+      } catch (err) {}
+      IDB.keys().then(function (keys) {
+        return Promise.all((keys || []).map(function (k) {
+          return IDB.get(k).then(function (v) { if (v) data.images[k] = v; });
+        }));
+      }).then(function () {
+        var blob = new Blob([JSON.stringify(data)], { type: 'application/json' });
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = 'dm-backup.json';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+        note.textContent = 'Backup saved as dm-backup.json in your Downloads.';
+      });
+    });
+
+    var loader = document.getElementById('backupLoad');
+    loader.addEventListener('change', function () {
+      var file = loader.files[0];
+      loader.value = '';
+      if (!file) return;
+      var r = new FileReader();
+      r.onload = function () {
+        var data;
+        try { data = JSON.parse(r.result); } catch (err) { data = null; }
+        if (!data || data.app !== 'dm-clone') { note.textContent = 'That file is not a backup from this page.'; return; }
+        try {
+          Object.keys(data.local || {}).forEach(function (k) {
+            if (k.indexOf('dm-') === 0) localStorage.setItem(k, data.local[k]);
+          });
+        } catch (err) {}
+        Promise.all(Object.keys(data.images || {}).map(function (k) {
+          return k.indexOf('dm-') === 0 ? IDB.set(k, data.images[k]) : null;
+        })).then(function () { location.reload(); });
+      };
+      r.readAsText(file);
+    });
+  })();
+
+  // ===== Images: paste a link or a screenshot =====
+  (function () {
+    var active = '1';   // which image a paste goes to when no box is focused
+    function okSrc(v) { return /^https?:\/\//i.test(v) || /^data:image\//i.test(v); }
+    function markActive(n) {
+      active = n;
+      panel.querySelectorAll('.up-row').forEach(function (row, i) {
+        row.classList.toggle('paste-target', String(i + 1) === n);
+      });
+    }
+    function useFile(n, file) {
+      var reader = new FileReader();
+      reader.onload = function () {
+        setImage(n, reader.result);
+        IDB.set('dm-image-' + n, reader.result);
+        var box = panel.querySelector('[data-link="' + n + '"]');
+        box.value = ''; box.placeholder = 'Screenshot pasted ✓ (paste again to replace)';
+      };
+      reader.readAsDataURL(file);
+    }
+    function useLink(n, url) {
+      url = (url || '').trim();
+      var box = panel.querySelector('[data-link="' + n + '"]');
+      if (!url) return;
+      if (!okSrc(url)) { box.classList.add('bad'); return; }
+      box.classList.remove('bad');
+      setImage(n, url);
+      IDB.set('dm-image-' + n, url);
+    }
+    function imageFrom(e) {
+      var items = (e.clipboardData && e.clipboardData.items) || [];
+      for (var i = 0; i < items.length; i++) {
+        if (items[i].kind === 'file' && /^image\//.test(items[i].type)) return items[i].getAsFile();
+      }
+      return null;
+    }
+
+    panel.querySelectorAll('.img-link').forEach(function (box) {
+      var n = box.getAttribute('data-link');
+      box.addEventListener('focus', function () { markActive(n); });
+      box.addEventListener('paste', function (e) {
+        var f = imageFrom(e);
+        if (f) { e.preventDefault(); useFile(n, f); }
+        else setTimeout(function () { useLink(n, box.value); }, 0);
+      });
+      box.addEventListener('change', function () { useLink(n, box.value); });
+      box.addEventListener('keydown', function (e) { if (e.key === 'Enter') useLink(n, box.value); });
+      box.addEventListener('input', function () { box.classList.remove('bad'); });
+    });
+    panel.querySelectorAll('.up-row').forEach(function (row, i) {
+      row.addEventListener('mousedown', function () { markActive(String(i + 1)); });
+    });
+
+    // Ctrl+V anywhere while the panel is open goes to the highlighted image
+    document.addEventListener('paste', function (e) {
+      if (panel.hidden) return;
+      if (e.target && e.target.classList && e.target.classList.contains('img-link')) return;
+      var f = imageFrom(e);
+      if (f) { e.preventDefault(); useFile(active, f); return; }
+      var text = e.clipboardData && e.clipboardData.getData('text');
+      if (text && okSrc(text.trim())) { e.preventDefault(); useLink(active, text); }
+    });
+
+    // show a saved link back in its box
+    ['1', '2'].forEach(function (n) {
+      IDB.get('dm-image-' + n).then(function (v) {
+        if (v && /^https?:/i.test(v)) panel.querySelector('[data-link="' + n + '"]').value = v;
+      });
+    });
+    panel.querySelectorAll('[data-clear]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var box = panel.querySelector('[data-link="' + btn.dataset.clear + '"]');
+        box.value = ''; box.placeholder = 'Paste a link or a screenshot (Ctrl+V)';
+      });
+    });
+    markActive('1');
+  })();
+
+  m.scrollTop = m.scrollHeight;
+</script>
+</body>
+</html>
